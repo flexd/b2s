@@ -114,11 +114,9 @@ func main() {
 				}
 
 			case *slack.PresenceChangeEvent:
-				fmt.Printf("Presence Change: %v\n", ev)
-
+				// Ignore these
 			case *slack.LatencyReport:
-				fmt.Printf("Current latency: %v\n", ev.Value)
-
+				// Ignore these
 			case *slack.RTMError:
 				fmt.Printf("Error: %s\n", ev.Error())
 
