@@ -1,0 +1,12 @@
+irc:
+    server: "barjavel.freenode.net:6667"
+    nick: "b2s"
+    realname: "b2s"
+    password: "somepasswordnotcurrentlyinuse"
+slack:
+    url: "https://someslack.slack.com"
+    token: "<YOUR SLACK TOKEN HERE>"
+relay_nick: True
+bridges:
+  - "#SLACKCHANNEHERE:#IRCTOREDIRECTTOHERE"
+  - "#slackchannel2:#irchannel2"

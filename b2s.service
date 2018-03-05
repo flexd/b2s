@@ -1,0 +1,18 @@
+[Unit]
+Description=b2s Slack IRC Bridge Daemon
+After=network.target
+
+[Service]
+PIDFile=/run/b2s/b2s.pid
+User=nobody
+Group=nogroup
+PermissionsStartOnly=true
+ExecStartPre=/bin/mkdir -p /run/b2s
+ExecStartPre=/bin/chown -R nobody:nogroup /run/b2s
+ExecStart=/usr/local/bin/b2s
+ExecStop=/bin/kill $MAINPID
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
