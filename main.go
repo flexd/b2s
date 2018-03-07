@@ -103,12 +103,13 @@ func main() {
 						text = strings.Replace(text, "\n", " ", -1)
 
 						text = urlRegexp.ReplaceAllString(text, `$1 ($2)`)
+						text = slackb.PrettifyMessage(text)
 						text = html.UnescapeString(text)
 
 						if ev.Msg.SubType == "" {
-							ircb.Connection.Privmsg(val, fmt.Sprintf("<%s>: %s", name, ev.Text))
+							ircb.Connection.Privmsg(val, fmt.Sprintf("<%s>: %s", name, text))
 						} else if ev.Msg.SubType == "me_message" {
-							ircb.Connection.Action(val, fmt.Sprintf("<%s>: %s", name, ev.Text))
+							ircb.Connection.Action(val, fmt.Sprintf("<%s>: %s", name, text))
 						}
 					}
 				}
@@ -130,7 +131,7 @@ func main() {
 	close(slackEvents)
 }
 
-// Semaphores to manages messages
+// Semaphores to manage relayed messages
 
 func incUser(users map[string]int, user, channel string) {
 	key := user + channel
