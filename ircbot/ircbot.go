@@ -2,6 +2,7 @@ package ircbot
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/viper"
 	"github.com/thoj/go-ircevent"
@@ -16,11 +17,19 @@ type Bot struct {
 
 //func New(server, nick, realname, password string) *Bot {
 func New(cfg *viper.Viper, channels []string) *Bot {
+	// Setup IRC
+	var ircChannels []string
+	// Loop through the stupid format to build our state
+	for _, pair := range channels {
+		sp := strings.Split(pair, ":")
+		ircChannel := sp[1]
+		ircChannels = append(ircChannels, ircChannel)
+	}
 	return &Bot{
 		Connection: irc.IRC(cfg.GetString("nick"), cfg.GetString("realname")),
 		events:     make(chan *irc.Event),
 		config:     cfg,
-		channels:   channels,
+		channels:   ircChannels,
 	}
 }
 func (b *Bot) Start() (chan *irc.Event, error) {
