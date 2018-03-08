@@ -107,9 +107,9 @@ func main() {
 						text = html.UnescapeString(text)
 
 						if ev.Msg.SubType == "" {
-							ircb.Connection.Privmsg(val, fmt.Sprintf("<%s>: %s", name, text))
+							ircb.Connection.Privmsg(val, fmt.Sprintf("<%s> %s", name, text))
 						} else if ev.Msg.SubType == "me_message" {
-							ircb.Connection.Action(val, fmt.Sprintf("<%s>: %s", name, text))
+							ircb.Connection.Action(val, fmt.Sprintf("<%s> %s", name, text))
 						}
 					}
 				}
