@@ -149,7 +149,7 @@ func (bot *Bot) PrettifyMessage(msg string) string {
 		}
 	}
 	// Match @U19J5UPEC (flexd) var ikke mentions fikset her da?  :/
-	re2 := regexp.MustCompile("([@#].+) \\((.+)\\)")
+	re2 := regexp.MustCompile(`([@#]\w+) \((\w+)\)`)
 	matches2 := re2.FindAllStringSubmatch(msg, -1)
 
 	for _, match := range matches2 {
