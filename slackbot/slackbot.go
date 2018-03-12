@@ -1,8 +1,11 @@
 package slackbot
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/nlopes/slack"
@@ -14,18 +17,68 @@ type Bot struct {
 	events     chan *slack.RTMEvent
 	channelMap map[string]string
 	userMap    map[string]string
+	emojiMap   map[string]string
 }
 
 func New(token string) *Bot {
 	api := slack.New(token)
+	emList, err := LoadEmoji("/etc/b2s/emoji_pretty.json")
+	if err != nil {
+		panic(err)
+	}
+	// Ugly! :(
+	// todo(flexd): Refactor this, or at the very least move it from this place!
+	emMap := make(map[string]string)
+	for _, v := range *emList {
+		if v.Text != "" {
+			emMap[v.ShortName] = v.Text
+		} else if v.Unified != "" {
+			bits := strings.Split(v.Unified, "-")
+			i, err := strconv.ParseInt(bits[0], 16, 32)
+			if err != nil {
+				fmt.Println(v.ShortName, "is being stupid:", err)
+				continue
+			}
+			r := rune(i)
+			emMap[v.ShortName] = string(r)
+		} else {
+			fmt.Println(v.ShortName, v.Texts)
+			emMap[v.ShortName] = v.Texts[0]
+		}
+	}
 	return &Bot{
 		api:        api,
 		events:     make(chan *slack.RTMEvent),
 		RTM:        api.NewRTM(),
 		channelMap: make(map[string]string),
 		userMap:    make(map[string]string),
+		emojiMap:   emMap,
 	}
 }
+
+type EmojiList []struct {
+	Name         string   `json:"name"`
+	ShortName    string   `json:"short_name"`
+	NonQualified string   `json:"non_qualified"`
+	Unified      string   `json:"unified"`
+	Texts        []string `json:"texts"`
+	Text         string   `json:"text"`
+}
+
+func LoadEmoji(filename string) (*EmojiList, error) {
+	emojiFile, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("error opening emoji file: %v", err.Error())
+	}
+	jsonParser := json.NewDecoder(emojiFile)
+	var emList EmojiList
+	if err = jsonParser.Decode(&emList); err != nil {
+		return nil, fmt.Errorf("error parsing emoji file: %v", err.Error())
+	}
+	return &emList, nil
+
+}
+
 func (b *Bot) Start() (chan *slack.RTMEvent, error) {
 	go b.RTM.ManageConnection()
 	go func() {
@@ -121,6 +174,15 @@ func (bot *Bot) resolveNames(id, needle, msg, match string) (string, error) {
 	}
 	return msg, nil
 
+}
+func (bot *Bot) ConvertSmileys(msg string) string {
+	var re = regexp.MustCompile(`\:([a-zA-Z0-9\-_\+]+)\:(?:\:([a-zA-Z0-9\-_\+]+)\:)?`)
+	for _, match := range re.FindAllStringSubmatch(msg, -1) {
+		if val, ok := bot.emojiMap[match[1]]; ok {
+			msg = strings.Replace(msg, match[0], val, -1)
+		}
+	}
+	return msg
 }
 func (bot *Bot) PrettifyMessage(msg string) string {
 	re := regexp.MustCompile("<(.*?)>")

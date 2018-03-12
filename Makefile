@@ -10,6 +10,7 @@ build:
 	$(GO) build -o build/b2s
 install:
 	$(CP) build/b2s /usr/local/bin/b2s
+	$(CP) emoji_pretty.json /etc/b2s/
 
 	# Install suristats_consumer service
 	$(CP) b2s.service /etc/systemd/system/

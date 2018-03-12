@@ -111,6 +111,7 @@ func (r *Relay) Loop() {
 
 						text = urlRegexp.ReplaceAllString(text, `$1 ($2)`)
 						text = r.slackb.PrettifyMessage(text)
+						text = r.slackb.ConvertSmileys(text)
 						text = html.UnescapeString(text)
 
 						if ev.Msg.SubType == "" {
