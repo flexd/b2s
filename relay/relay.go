@@ -114,9 +114,9 @@ func (r *Relay) Loop() {
 						text = html.UnescapeString(text)
 
 						if ev.Msg.SubType == "" {
-							r.ircb.Connection.Privmsg(val, fmt.Sprintf("<%s>: %s", name, text))
+							r.ircb.Connection.Privmsg(val, fmt.Sprintf("<%s> %s", name, text))
 						} else if ev.Msg.SubType == "me_message" {
-							r.ircb.Connection.Action(val, fmt.Sprintf("<%s>: %s", name, text))
+							r.ircb.Connection.Action(val, fmt.Sprintf("<%s> %s", name, text))
 						}
 					}
 				}
