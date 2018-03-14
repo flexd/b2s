@@ -91,7 +91,7 @@ func (r *Relay) Loop() {
 				if ev.Username == "" {
 					name, isbot, err = r.slackb.GetUsername(ev.User)
 					if err != nil && !isbot {
-						fmt.Println("Error getting username: ", err)
+						fmt.Println("Error getting username:", ev.User, "error message:", err)
 						continue
 					}
 				} else {
