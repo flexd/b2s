@@ -25,8 +25,10 @@ func New(cfg *viper.Viper, channels []string) *Bot {
 		ircChannel := sp[1]
 		ircChannels = append(ircChannels, ircChannel)
 	}
+	connection := irc.IRC(cfg.GetString("nick"), cfg.GetString("realname"))
+	connection.Password = cfg.GetString("password")
 	return &Bot{
-		Connection: irc.IRC(cfg.GetString("nick"), cfg.GetString("realname")),
+		Connection: connection,
 		events:     make(chan *irc.Event),
 		config:     cfg,
 		channels:   ircChannels,
