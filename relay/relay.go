@@ -105,7 +105,7 @@ func (r *Relay) Loop() {
 				}
 				channel = "#" + channel
 				if r.shouldHandle(name, channel) {
-					if val, ok := r.slackToirc[channel]; ok {
+					if target, ok := r.slackToirc[channel]; ok {
 						text := strings.Replace(ev.Text, "\n", " ", -1)
 						text = strings.Replace(text, "\n", " ", -1)
 
@@ -114,11 +114,20 @@ func (r *Relay) Loop() {
 						text = r.slackb.ConvertSmileys(text)
 						text = html.UnescapeString(text)
 
-						if ev.Msg.SubType == "" {
-							r.ircb.Connection.Privmsg(val, fmt.Sprintf("<%s> %s", name, text))
-						} else if ev.Msg.SubType == "me_message" {
-							r.ircb.Connection.Action(val, fmt.Sprintf("<%s> %s", name, text))
+						prefix := fmt.Sprintf("<%s> ", name)
+						plen := len(prefix)
+						for len(text) > 400-plen {
+							index := 400
+							for i := index - plen; i >= index-plen-15; i-- {
+								if string(text[i]) == " " {
+									index = i
+									break
+								}
+							}
+							r.Reply(ev.Msg.SubType, target, fmt.Sprintf("%s%s", prefix, text[:index]))
+							text = text[index:]
 						}
+						r.Reply(ev.Msg.SubType, target, fmt.Sprintf("%s%s", prefix, text))
 					}
 				}
 
@@ -134,6 +143,14 @@ func (r *Relay) Loop() {
 				return
 			}
 		}
+	}
+}
+
+func (r *Relay) Reply(subtype, target, text string) {
+	if subtype == "" {
+		r.ircb.Connection.Privmsg(target, text)
+	} else if subtype == "me_message" {
+		r.ircb.Connection.Action(target, text)
 	}
 }
 
