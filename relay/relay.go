@@ -187,7 +187,7 @@ func (r *Relay) Loop() {
 							text = r.slackb.ConvertSmileys(text)
 							text = html.UnescapeString(text)
 
-							prefix := fmt.Sprintf("<%s> ", name)
+							prefix := fmt.Sprintf("<%s> ", ircbot.F(name).Attr(ircbot.Bold).Fg(ircbot.Yellow).String())
 							plen := len(prefix)
 							for len(text) > 400-plen {
 								index := 400
