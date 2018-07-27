@@ -3,6 +3,7 @@ package relay
 import (
 	"fmt"
 	"html"
+	"log"
 	"regexp"
 	"strings"
 
@@ -86,48 +87,121 @@ func (r *Relay) Loop() {
 				fmt.Println("Connection counter:", ev.ConnectionCount)
 
 			case *slack.MessageEvent:
-				name := ""
-				isbot := false
-				if ev.Username == "" {
-					name, isbot, err = r.slackb.GetUsername(ev.User)
-					if err != nil && !isbot {
-						fmt.Println("Error getting username:", ev.User, "error message:", err)
+				switch ev.SubType {
+				case "file_comment", "file_share":
+					log.Printf("%+v\n", ev)
+					//2018/04/18 13:12:49 Someone commented on a file: &{Msg:{Type:message Channel:C9KJHEZ3R User: Text:<@U19J5UPEC> commented on <@U19J5UPEC>’s file <https://bitraf.slack.com/files/U19J5UPEC/FA8RNMBQS/30174552_10160070492875532_2145625917_o.jpg|30174552_10160070492875532_2145625917_o.jpg>: boop Timestamp:1524049969.000276 ThreadTimestamp: IsStarred:false PinnedTo:[] Attachments:[] Edited:<nil> LastRead: Subscribed:false UnreadCount:0 SubType:file_comment Hidden:false DeletedTimestamp: EventTimestamp:1524049969.000276 BotID: Username: Icons:<nil> Inviter: Topic: Purpose: Name: OldName: Members:[] ReplyCount:0 Replies:[] ParentUserId: File:0xc4206c2600 Upload:false Comment:0xc42059cdc0 ItemType: ReplyTo:0 Team:T03G9SFJ7 Reactions:[] ResponseType: ReplaceOriginal:false} SubMessage:<nil>}
+
+					var name string
+					isbot := false
+					var user string
+					if ev.SubType == "file_comment" {
+						var fileCommentRe = regexp.MustCompile(`<@(.+)> commented on <@(.+)>’s file <(.+)>: (.+)`)
+
+						matches := fileCommentRe.FindStringSubmatch(ev.Text)
+
+						if len(matches) == 0 {
+							log.Println("Failed to extract details from file comment event")
+							continue
+						}
+						user = matches[1]
+					} else if ev.SubType == "file_share" {
+						log.Println("ev.URLPrivate is:", ev.File.URLPrivate)
+						var fileShareRe = regexp.MustCompile(`<(@.+)> uploaded a file.+<(.+)>`)
+						matches := fileShareRe.FindStringSubmatch(ev.Text)
+
+						if len(matches) == 0 {
+							log.Println("Failed to extract details from file share event")
+							continue
+						}
+						user = matches[1]
+					}
+					if ev.Username == "" {
+						name, isbot, err = r.slackb.GetUsername(user)
+						if err != nil && !isbot {
+							fmt.Println("Error getting username:", ev.User, "error message:", err)
+							continue
+						}
+					} else {
+						name = ev.Username
+					}
+
+					channel, err := r.slackb.GetChannelName(ev.Channel)
+					if err != nil {
+						fmt.Println("Error getting channel name: ", err)
 						continue
 					}
-				} else {
-					name = ev.Username
-				}
+					channel = "#" + channel
+					if r.shouldHandle(name, channel) {
+						if target, ok := r.slackToirc[channel]; ok {
+							text := strings.Replace(ev.Text, "\n", " ", -1)
+							text = strings.Replace(text, "\n", " ", -1)
 
-				channel, err := r.slackb.GetChannelName(ev.Channel)
-				if err != nil {
-					fmt.Println("Error getting channel name: ", err)
-					continue
-				}
-				channel = "#" + channel
-				if r.shouldHandle(name, channel) {
-					if target, ok := r.slackToirc[channel]; ok {
-						text := strings.Replace(ev.Text, "\n", " ", -1)
-						text = strings.Replace(text, "\n", " ", -1)
+							text = urlRegexp.ReplaceAllString(text, `$1 ($2)`)
+							text = r.slackb.PrettifyMessage(text)
+							text = r.slackb.ConvertSmileys(text)
+							text = html.UnescapeString(text)
 
-						text = urlRegexp.ReplaceAllString(text, `$1 ($2)`)
-						text = r.slackb.PrettifyMessage(text)
-						text = r.slackb.ConvertSmileys(text)
-						text = html.UnescapeString(text)
-
-						prefix := fmt.Sprintf("<%s> ", name)
-						plen := len(prefix)
-						for len(text) > 400-plen {
-							index := 400
-							for i := index - plen; i >= index-plen-15; i-- {
-								if string(text[i]) == " " {
-									index = i
-									break
+							prefix := fmt.Sprintf("<%s> ", name)
+							plen := len(prefix)
+							for len(text) > 400-plen {
+								index := 400
+								for i := index - plen; i >= index-plen-15; i-- {
+									if string(text[i]) == " " {
+										index = i
+										break
+									}
 								}
+								r.Reply(ev.Msg.SubType, target, fmt.Sprintf("%s%s", prefix, text[:index]))
+								text = text[index:]
 							}
-							r.Reply(ev.Msg.SubType, target, fmt.Sprintf("%s%s", prefix, text[:index]))
-							text = text[index:]
+							r.Reply(ev.Msg.SubType, target, fmt.Sprintf("%s%s", prefix, text))
 						}
-						r.Reply(ev.Msg.SubType, target, fmt.Sprintf("%s%s", prefix, text))
+					}
+				default:
+					name := ""
+					isbot := false
+					if ev.Username == "" {
+						name, isbot, err = r.slackb.GetUsername(ev.User)
+						if err != nil && !isbot {
+							fmt.Println("Error getting username:", ev.User, "error message:", err)
+							continue
+						}
+					} else {
+						name = ev.Username
+					}
+
+					channel, err := r.slackb.GetChannelName(ev.Channel)
+					if err != nil {
+						fmt.Println("Error getting channel name: ", err)
+						continue
+					}
+					channel = "#" + channel
+					if r.shouldHandle(name, channel) {
+						if target, ok := r.slackToirc[channel]; ok {
+							text := strings.Replace(ev.Text, "\n", " ", -1)
+							text = strings.Replace(text, "\n", " ", -1)
+
+							text = urlRegexp.ReplaceAllString(text, `$1 ($2)`)
+							text = r.slackb.PrettifyMessage(text)
+							text = r.slackb.ConvertSmileys(text)
+							text = html.UnescapeString(text)
+
+							prefix := fmt.Sprintf("<%s> ", name)
+							plen := len(prefix)
+							for len(text) > 400-plen {
+								index := 400
+								for i := index - plen; i >= index-plen-15; i-- {
+									if string(text[i]) == " " {
+										index = i
+										break
+									}
+								}
+								r.Reply(ev.Msg.SubType, target, fmt.Sprintf("%s%s", prefix, text[:index]))
+								text = text[index:]
+							}
+							r.Reply(ev.Msg.SubType, target, fmt.Sprintf("%s%s", prefix, text))
+						}
 					}
 				}
 
@@ -145,12 +219,11 @@ func (r *Relay) Loop() {
 		}
 	}
 }
-
 func (r *Relay) Reply(subtype, target, text string) {
-	if subtype == "" {
-		r.ircb.Connection.Privmsg(target, text)
-	} else if subtype == "me_message" {
+	if subtype == "me_message" {
 		r.ircb.Connection.Action(target, text)
+	} else {
+		r.ircb.Connection.Privmsg(target, text)
 	}
 }
 

@@ -155,7 +155,7 @@ func (bot *Bot) prependType(needle, msg, match, name string) string {
 
 }
 
-func (bot *Bot) resolveNames(id, needle, msg, match string) (string, error) {
+func (bot *Bot) ResolveNames(id, needle, msg, match string) (string, error) {
 	// channel starts with C
 	if needle == "C" {
 		name, err := bot.GetChannelName(id)
@@ -203,7 +203,7 @@ func (bot *Bot) PrettifyMessage(msg string) string {
 		} else if len(splits) == 1 {
 			// need to fetch channel/username
 			var err error
-			msg, err = bot.resolveNames(id, needle, msg, match)
+			msg, err = bot.ResolveNames(id, needle, msg, match)
 			if err != nil {
 				fmt.Println(err)
 				return string(match[0])
@@ -226,7 +226,7 @@ func (bot *Bot) PrettifyMessage(msg string) string {
 		} else if len(match) == 2 {
 			// need to fetch channel/username
 			var err error
-			msg, err = bot.resolveNames(id, needle, msg, match[0])
+			msg, err = bot.ResolveNames(id, needle, msg, match[0])
 			if err != nil {
 				fmt.Println(err)
 				return string(match[0])
