@@ -220,9 +220,12 @@ func (r *Relay) Loop() {
 	}
 }
 func (r *Relay) Reply(subtype, target, text string) {
-	if subtype == "me_message" {
+	switch subtype {
+	case "me_message":
 		r.ircb.Connection.Action(target, text)
-	} else {
+	case "channel_join":
+		r.ircb.Connection.Notice(target, text)
+	default:
 		r.ircb.Connection.Privmsg(target, text)
 	}
 }
