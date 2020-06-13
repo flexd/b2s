@@ -3,6 +3,7 @@ package slackbot
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strconv"
@@ -128,7 +129,7 @@ func (bot *Bot) GetUsername(userId string) (name string, isbot bool, err error) 
 	info, err := bot.api.GetUserInfo(userId)
 	if err != nil {
 		fmt.Println("Could not fetch user info")
-		err = fmt.Errorf("Could not get username: %s", err.Error())
+		err = fmt.Errorf("Could not get user info for uid: %s, error: %s", userId, err.Error())
 		return
 	}
 
@@ -166,6 +167,7 @@ func (bot *Bot) ResolveNames(id, needle, msg, match string) (string, error) {
 
 		// username starts with U
 	} else if needle == "U" {
+		log.Println("ResolveNames: Trying to get user info for:", id)
 		name, _, err := bot.GetUsername(id)
 		if err != nil {
 			return "", fmt.Errorf("Could not get username for %v, error: %v", id, err)
@@ -205,7 +207,7 @@ func (bot *Bot) PrettifyMessage(msg string) string {
 			var err error
 			msg, err = bot.ResolveNames(id, needle, msg, match)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Println("could not resolve names: msg: %v, match: %v, err: %v", msg, match, err)
 				return string(match[0])
 			}
 		}
