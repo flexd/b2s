@@ -223,7 +223,7 @@ func (r *Relay) Reply(subtype, target, text string) {
 	switch subtype {
 	case "me_message":
 		r.ircb.Connection.Action(target, text)
-	case "channel_join":
+	case "member_joined_channel":
 		r.ircb.Connection.Notice(target, text)
 	default:
 		r.ircb.Connection.Privmsg(target, text)
