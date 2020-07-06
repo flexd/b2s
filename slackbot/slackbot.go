@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nlopes/slack"
+	"github.com/slack-go/slack"
 )
 
 type Bot struct {
@@ -90,17 +90,15 @@ func (b *Bot) Start() (chan *slack.RTMEvent, error) {
 	return b.events, nil
 }
 func (b *Bot) SendMessage(from, channel, text string) {
-	params := slack.PostMessageParameters{
-		Username: from,
-	}
-	b.api.PostMessage(channel, text, params)
+	user := slack.MsgOptionUser(from)
+	msg := slack.MsgOptionText(text, false)
+	b.api.PostMessage(channel, msg, user)
 }
 func (b *Bot) SendAction(from, channel, text string) {
-	params := slack.PostMessageParameters{
-		Username: from,
-		Markdown: true,
-	}
-	b.api.PostMessage(channel, fmt.Sprintf("_%s_", text), params)
+	user := slack.MsgOptionUser(from)
+	action := slack.MsgOptionMeMessage()
+	msg := slack.MsgOptionText(text, false)
+	b.api.PostMessage(channel, user, action, msg)
 }
 func (bot *Bot) GetChannelName(channelId string) (string, error) {
 	if val, ok := bot.channelMap[channelId]; ok {

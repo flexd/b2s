@@ -106,7 +106,7 @@ func (r *Relay) Loop() {
 						}
 						user = matches[1]
 					} else if ev.SubType == "file_share" {
-						log.Println("ev.URLPrivate is:", ev.File.URLPrivate)
+						//log.Println("ev.URLPrivate is:", ev.Files.URLPrivate)
 						var fileShareRe = regexp.MustCompile(`<(@.+)> uploaded a file.+<(.+)>`)
 						matches := fileShareRe.FindStringSubmatch(ev.Text)
 
